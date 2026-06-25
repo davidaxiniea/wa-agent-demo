@@ -42,12 +42,15 @@ body{
   color:var(--wa-text);
   min-height:100dvh;
   display:flex;
-  flex-direction:column;
-  align-items:center;
+  align-items:flex-start;
   justify-content:center;
-  gap:14px;
   padding:16px;
-  overflow:hidden;
+  overflow-y:auto;
+}
+.stage{
+  margin:auto;                 /* centrare scroll-safe pe ambele axe */
+  width:100%;max-width:390px;
+  display:flex;flex-direction:column;align-items:center;gap:14px;
 }
 
 /* ---------- PHONE FRAME ---------- */
@@ -231,19 +234,17 @@ body{
 
 /* ---------- END CARD ---------- */
 .endcard{
-  position:absolute;left:0;right:0;bottom:0;z-index:15;
-  margin:0 10px calc(env(safe-area-inset-bottom) + 70px);
-  padding:20px 18px;
-  background:rgba(12,20,32,0.86);
+  width:100%;max-width:390px;flex:0 0 auto;
+  padding:18px;
+  background:rgba(12,20,32,0.9);
   border:1px solid var(--dal-gold-soft);
-  border-radius:20px;
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  box-shadow:0 20px 50px -20px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.03) inset;
-  opacity:0;transform:translateY(26px) scale(.98);
+  border-radius:18px;
+  box-shadow:0 18px 44px -22px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.03) inset;
+  display:none;
+  opacity:0;transform:translateY(14px) scale(.99);
   transition:opacity .5s cubic-bezier(.22,1,.36,1), transform .5s cubic-bezier(.22,1,.36,1);
-  pointer-events:none;
 }
-.endcard.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.endcard.show{opacity:1;transform:translateY(0) scale(1)}
 .endcard .eyebrow{
   font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dal-gold);
   margin-bottom:9px;font-weight:600;
@@ -308,9 +309,11 @@ body{
 .replay.ghost.active{background:var(--dal-gold-soft);border-color:var(--dal-gold);color:var(--dal-gold)}
 
 @media (max-width:430px){
-  body{padding:0;gap:0;justify-content:flex-start}
-  .phone{max-width:100%;width:100%;height:auto;flex:1 1 auto;border-radius:0;box-shadow:none}
+  body{padding:0}
+  .stage{max-width:100%;gap:0}
+  .phone{max-width:100%;width:100%;border-radius:0;box-shadow:none}
   .controls{max-width:100%;border-radius:0;border-left:0;border-right:0}
+  .endcard{max-width:100%;border-radius:0;border-left:0;border-right:0}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001s!important;transition-duration:.05s!important}
@@ -319,6 +322,7 @@ body{
 </head>
 <body>
 
+<div class="stage">
 <div class="phone" id="phone">
 
   <!-- HEADER -->
@@ -350,22 +354,25 @@ body{
     <div class="scene" id="overlayScene"></div>
   </div>
 
-  <!-- END CARD -->
+</div><!-- /phone -->
+
+  <!-- END CARD (sub telefon, în afara chat-ului) -->
   <div class="endcard" id="endcard">
     <div class="eyebrow">DAL Media · Agent WhatsApp</div>
     <p id="endText"></p>
   </div>
-</div>
 
-<!-- CONTROLS -->
-<div class="controls">
-  <div class="ctl-label">Scenariu</div>
-  <div class="row" id="scenarioRow"></div>
+  <!-- CONTROLS -->
+  <div class="controls">
+    <div class="ctl-label">Scenariu</div>
+    <div class="row" id="scenarioRow"></div>
 
-  <div class="row" style="margin-top:6px">
-    <button class="replay ghost" id="pauseBtn" style="flex:1 1 auto;justify-content:center">⏸ Pauză</button>
+    <div class="row" style="margin-top:6px">
+      <button class="replay ghost" id="pauseBtn" style="flex:1 1 auto;justify-content:center">⏸ Pauză</button>
+    </div>
   </div>
-</div>
+
+</div><!-- /stage -->
 
 <script>
 /* =================================================================
@@ -531,7 +538,15 @@ function resetChat(){
   // șterge tot ce e după elementele fixe (day + encryption)
   [...scroll.querySelectorAll('.bubble,.typing')].forEach(el=>el.remove());
   endcard.classList.remove('show');
+  endcard.style.display = 'none';
   overlay.classList.remove('hide');
+}
+
+function revealEndcard(){
+  endcard.style.display = 'block';
+  void endcard.offsetWidth;                 // reflow ca tranziția să pornească
+  endcard.classList.add('show');
+  endcard.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
 function applyConfig(cfg){
@@ -580,8 +595,7 @@ async function play(key){
     }
 
     await wait(800);
-    endcard.classList.add('show');
-    scrollDown();
+    revealEndcard();
   } catch(e){ /* rulare anulată prin replay / schimbare scenariu */ }
 }
 
