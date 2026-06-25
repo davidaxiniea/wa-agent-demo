@@ -42,9 +42,11 @@ body{
   color:var(--wa-text);
   min-height:100dvh;
   display:flex;
+  flex-direction:column;
   align-items:center;
   justify-content:center;
-  padding:18px;
+  gap:14px;
+  padding:16px;
   overflow:hidden;
 }
 
@@ -53,7 +55,7 @@ body{
   position:relative;
   width:100%;
   max-width:390px;
-  height:min(820px, 94dvh);
+  height:min(720px, calc(100dvh - 190px));
   background:var(--wa-bg);
   border-radius:34px;
   overflow:hidden;
@@ -269,19 +271,27 @@ body{
   backdrop-filter:blur(4px);pointer-events:none;
 }
 
-/* ---------- REPLAY / SCENARIO PICKER (sub telefon) ---------- */
+/* ---------- CONTROLS PANEL (sub telefon) ---------- */
 .controls{
-  position:fixed;left:0;right:0;bottom:0;z-index:30;
-  display:flex;flex-direction:column;align-items:center;gap:9px;
-  padding:12px 14px calc(env(safe-area-inset-bottom) + 12px);
-  pointer-events:none;
+  width:100%;max-width:390px;flex:0 0 auto;
+  display:flex;flex-direction:column;gap:8px;
+  background:rgba(12,20,32,0.55);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:18px;
+  padding:12px 13px;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  box-shadow:0 14px 36px -22px rgba(0,0,0,0.7);
 }
-.controls .row{display:flex;gap:7px;pointer-events:auto;flex-wrap:wrap;justify-content:center}
+.ctl-label{
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;
+  color:var(--dal-gold);opacity:.8;margin:2px 2px -2px;
+}
+.controls .row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.controls .row.split{justify-content:space-between}
 .chip{
-  font-size:12px;font-weight:600;color:#cdd5da;
-  background:rgba(12,20,32,0.7);border:1px solid rgba(255,255,255,0.12);
-  padding:7px 13px;border-radius:999px;cursor:pointer;
-  backdrop-filter:blur(8px);
+  font-size:12.5px;font-weight:600;color:#cdd5da;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);
+  padding:8px 13px;border-radius:999px;cursor:pointer;
   transition:transform .16s cubic-bezier(.4,0,.2,1), background .16s ease, color .16s ease, border-color .16s ease;
 }
 .chip:hover{transform:translateY(-1px);border-color:var(--dal-gold-soft)}
@@ -289,9 +299,9 @@ body{
 .chip:focus-visible{outline:2px solid var(--dal-gold);outline-offset:2px}
 .chip.active{background:var(--dal-gold);color:#241c05;border-color:var(--dal-gold)}
 .replay{
-  font-size:12.5px;font-weight:700;color:#03241a;
+  font-size:13px;font-weight:700;color:#03241a;
   background:linear-gradient(180deg,#2bdd72,#13b257);
-  padding:9px 18px;border-radius:999px;cursor:pointer;border:0;
+  padding:10px 18px;border-radius:999px;cursor:pointer;border:0;
   box-shadow:0 8px 22px -8px rgba(37,211,102,0.7);
   display:inline-flex;align-items:center;gap:7px;
   transition:transform .16s cubic-bezier(.4,0,.2,1), box-shadow .16s ease;
@@ -299,12 +309,17 @@ body{
 .replay:hover{transform:translateY(-2px)}
 .replay:active{transform:scale(.97)}
 .replay:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.replay.ghost{
+  background:rgba(255,255,255,0.05);color:#e9edef;
+  border:1px solid rgba(255,255,255,0.16);box-shadow:none;
+}
+.replay.ghost:hover{border-color:var(--dal-gold-soft)}
+.replay.ghost.active{background:var(--dal-gold-soft);border-color:var(--dal-gold);color:var(--dal-gold)}
 
-@media (max-width:400px){
-  body{padding:0}
-  .phone{max-width:100%;height:100dvh;border-radius:0;box-shadow:none}
-  .phone::after{display:none}
-  .controls{background:linear-gradient(0deg, rgba(7,18,14,0.92), transparent)}
+@media (max-width:430px){
+  body{padding:0;gap:0;justify-content:flex-start}
+  .phone{max-width:100%;width:100%;height:auto;flex:1 1 auto;border-radius:0;box-shadow:none}
+  .controls{max-width:100%;border-radius:0;border-left:0;border-right:0}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001s!important;transition-duration:.05s!important}
@@ -355,8 +370,18 @@ body{
 
 <!-- CONTROLS -->
 <div class="controls">
+  <div class="ctl-label">Scenariu</div>
   <div class="row" id="scenarioRow"></div>
-  <div class="row">
+
+  <div class="ctl-label">Viteză</div>
+  <div class="row" id="speedRow">
+    <button class="chip" data-speed="lent">🐢 Lent</button>
+    <button class="chip" data-speed="normal">Normal</button>
+    <button class="chip" data-speed="rapid">⚡ Rapid</button>
+  </div>
+
+  <div class="row split" style="margin-top:4px">
+    <button class="replay ghost" id="pauseBtn">⏸ Pauză</button>
     <button class="replay" id="replayBtn">↻ Redă din nou</button>
   </div>
 </div>
@@ -448,23 +473,52 @@ const SCENARII = {
 };
 
 /* =================================================================
+   SETĂRI — viteza de redare. 'lent' = mai relaxat (default).
+   Multiplicatorii înmulțesc TOATE pauzele/typing din scenarii.
+   ================================================================= */
+const SETARI = {
+  vitezaInitiala:'lent',                          // 'lent' | 'normal' | 'rapid'
+  multiplicatori:{ lent:1.6, normal:1.0, rapid:0.6 },
+};
+
+/* =================================================================
    MOTOR — nu trebuie modificat ca să reskinuiești.
    ================================================================= */
 const $ = s => document.querySelector(s);
 const scroll = $('#scroll');
 const overlay = $('#overlay');
 const endcard = $('#endcard');
+
 let activeKey = 'ac';
-let timers = [];
-let running = false;
+let gen = 0;                 // anulează rularea curentă la replay / schimbare scenariu
+let waiters = [];            // timere active (pausabile + anulabile)
+const playback = { speedKey: SETARI.vitezaInitiala, paused:false };
+
+function factor(){ return SETARI.multiplicatori[playback.speedKey] || 1; }
+
+/* wait pausabil + anulabil */
+function wait(ms){
+  return new Promise((resolve, reject)=>{
+    let remaining = ms * factor();
+    let start = 0, timer = null;
+    const w = {};
+    function remove(){ const i = waiters.indexOf(w); if(i>=0) waiters.splice(i,1); }
+    const done = ()=>{ remove(); resolve(); };
+    const arm  = ()=>{ start = Date.now(); timer = setTimeout(done, Math.max(0, remaining)); };
+    w.pause  = ()=>{ if(timer){ clearTimeout(timer); timer = null; remaining -= Date.now() - start; } };
+    w.resume = ()=>{ if(!timer){ if(remaining > 0) arm(); else done(); } };
+    w.cancel = ()=>{ if(timer){ clearTimeout(timer); timer = null; } remove(); reject('cancel'); };
+    waiters.push(w);
+    if(!playback.paused) arm();
+  });
+}
+function cancelAll(){ gen++; const ws = [...waiters]; waiters = []; ws.forEach(w=>w.cancel()); }
 
 const TICKS_SVG = `<span class="ticks"><svg width="16" height="11" viewBox="0 0 16 11" fill="none">
 <path d="M11.07.65 5.6 7.5 3.4 5.1 2.4 6.1l3.3 3.6L12.1 1.6z" fill="#53bdeb"/>
 <path d="M15.07.65 9.6 7.5 8.7 6.5 7.7 7.5l1.9 2.2L16.1 1.6z" fill="#53bdeb"/>
 </svg></span>`;
 
-function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
-function wait(ms){ return new Promise(r=>timers.push(setTimeout(r,ms))); }
 function scrollDown(){ scroll.scrollTop = scroll.scrollHeight + 999; }
 
 function buildBubble(m){
@@ -492,7 +546,7 @@ function showTyping(){
 }
 
 function resetChat(){
-  clearTimers();
+  cancelAll();
   // șterge tot ce e după elementele fixe (day + encryption)
   [...scroll.querySelectorAll('.bubble,.typing')].forEach(el=>el.remove());
   endcard.classList.remove('show');
@@ -518,45 +572,63 @@ function applyConfig(cfg){
 async function play(key){
   const cfg = SCENARII[key];
   activeKey = key;
-  running = true;
-  resetChat();
+  resetChat();            // anulează rularea anterioară (gen++)
   applyConfig(cfg);
   highlightChip(key);
+  setPaused(false);
 
-  // overlay vizibil ~1.5s
-  await wait(1500);
-  overlay.classList.add('hide');
-  await wait(550);
+  try{
+    // overlay vizibil ~1.5s
+    await wait(1500);
+    overlay.classList.add('hide');
+    await wait(550);
 
-  for(const m of cfg.mesaje){
-    if(!running) return;
-    await wait(m.intarziereMs || 400);
-    if(m.sender === 'agent' && m.typingMs){
-      const t = showTyping();
-      await wait(m.typingMs);
-      t.remove();
+    for(const m of cfg.mesaje){
+      await wait(m.intarziereMs || 400);
+      if(m.sender === 'agent' && m.typingMs){
+        const t = showTyping();
+        await wait(m.typingMs);
+        t.remove();
+      }
+      const b = buildBubble(m);
+      scroll.appendChild(b);
+      scrollDown();
+      requestAnimationFrame(()=>{ b.classList.add('show'); scrollDown(); });
+      await wait(280);
+      scrollDown();
     }
-    if(!running) return;
-    const b = buildBubble(m);
-    scroll.appendChild(b);
-    scrollDown();
-    requestAnimationFrame(()=>{ b.classList.add('show'); scrollDown(); });
-    await wait(260);
-    scrollDown();
-  }
 
-  await wait(700);
-  if(!running) return;
-  endcard.classList.add('show');
-  scrollDown();
-  running = false;
+    await wait(800);
+    endcard.classList.add('show');
+    scrollDown();
+  } catch(e){ /* rulare anulată prin replay / schimbare scenariu */ }
 }
+
+/* ---- pauză / continuă ---- */
+function setPaused(p){
+  playback.paused = p;
+  if(p) waiters.forEach(w=>w.pause());
+  else  waiters.forEach(w=>w.resume());
+  const btn = $('#pauseBtn');
+  btn.innerHTML = p ? '▶ Continuă' : '⏸ Pauză';
+  btn.classList.toggle('active', p);
+}
+function togglePause(){ setPaused(!playback.paused); }
+
+/* ---- viteză ---- */
+const speedRow = $('#speedRow');
+function highlightSpeed(){
+  speedRow.querySelectorAll('[data-speed]').forEach(b=>
+    b.classList.toggle('active', b.dataset.speed === playback.speedKey));
+}
+speedRow.querySelectorAll('[data-speed]').forEach(b=>{
+  b.addEventListener('click', ()=>{ playback.speedKey = b.dataset.speed; highlightSpeed(); });
+});
 
 /* ---- scenario picker ---- */
 function highlightChip(key){
-  document.querySelectorAll('.chip').forEach(c=>{
-    c.classList.toggle('active', c.dataset.key === key);
-  });
+  document.querySelectorAll('#scenarioRow .chip').forEach(c=>
+    c.classList.toggle('active', c.dataset.key === key));
 }
 const row = $('#scenarioRow');
 Object.entries(SCENARII).forEach(([key,cfg])=>{
@@ -564,14 +636,16 @@ Object.entries(SCENARII).forEach(([key,cfg])=>{
   c.className = 'chip';
   c.dataset.key = key;
   c.textContent = cfg.eticheta;
-  c.addEventListener('click', ()=>{ running = false; clearTimers(); play(key); });
+  c.addEventListener('click', ()=> play(key));
   row.appendChild(c);
 });
 
-$('#replayBtn').addEventListener('click', ()=>{ running = false; clearTimers(); play(activeKey); });
-$('#endReplay').addEventListener('click', ()=>{ running = false; clearTimers(); play(activeKey); });
+$('#pauseBtn').addEventListener('click', togglePause);
+$('#replayBtn').addEventListener('click', ()=> play(activeKey));
+$('#endReplay').addEventListener('click', ()=> play(activeKey));
 
 /* start */
+highlightSpeed();
 play('ac');
 </script>
 </body>
