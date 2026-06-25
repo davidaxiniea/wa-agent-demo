@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Demo agent WhatsApp — DAL Media</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* =================================================================
+   CONFIG — schimbă aici ca să reskinuiești pe altă meserie.
+   Editează variabila ACTIVE de mai jos (AC / INSTALATOR / ELECTRICIAN)
+   ================================================================= */
+:root{
+  /* DAL Media brand tokens — folosite DOAR la badge/card final */
+  --dal-ink:#0a1322;
+  --dal-gold:#f0c040;
+  --dal-gold-soft:rgba(240,192,64,0.15);
+  --dal-gold-glow:rgba(240,192,64,0.40);
+
+  /* WhatsApp look */
+  --wa-green:#25D366;
+  --wa-green-dark:#075E54;
+  --wa-header:#075E54;
+  --wa-teal-tick:#53bdeb;
+  --wa-bg:#0b141a;
+  --wa-bubble-in:#202c33;
+  --wa-bubble-out:#005c4b;
+  --wa-text:#e9edef;
+  --wa-text-dim:#8696a0;
+  --wa-time:#ffffff99;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:
+    radial-gradient(900px 600px at 80% -10%, rgba(240,192,64,0.10), transparent 60%),
+    radial-gradient(800px 700px at -10% 110%, rgba(37,211,102,0.10), transparent 55%),
+    var(--dal-ink);
+  color:var(--wa-text);
+  min-height:100dvh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  overflow:hidden;
+}
+
+/* ---------- PHONE FRAME ---------- */
+.phone{
+  position:relative;
+  width:100%;
+  max-width:390px;
+  height:min(820px, 94dvh);
+  background:var(--wa-bg);
+  border-radius:34px;
+  overflow:hidden;
+  box-shadow:
+    0 2px 0 rgba(255,255,255,0.04) inset,
+    0 30px 60px -20px rgba(0,0,0,0.7),
+    0 0 0 10px #0d0f12,
+    0 0 0 12px #1c1f24,
+    0 40px 120px -30px var(--dal-gold-glow);
+  display:flex;
+  flex-direction:column;
+  isolation:isolate;
+}
+
+/* chat wallpaper (WhatsApp dark) */
+.phone::before{
+  content:"";
+  position:absolute;inset:0;
+  background-image:
+    radial-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+    radial-gradient(rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size:22px 22px, 17px 17px;
+  background-position:0 0, 9px 9px;
+  opacity:.9;
+  z-index:0;
+  pointer-events:none;
+}
+
+/* ---------- HEADER ---------- */
+.wa-header{
+  position:relative;z-index:3;
+  flex:0 0 auto;
+  display:flex;align-items:center;gap:11px;
+  padding:calc(env(safe-area-inset-top) + 12px) 14px 11px;
+  background:var(--wa-header);
+  box-shadow:0 1px 0 rgba(0,0,0,0.25);
+}
+.wa-back{color:#fff;opacity:.92;font-size:22px;line-height:1;flex:0 0 auto}
+.wa-avatar{
+  width:40px;height:40px;border-radius:50%;flex:0 0 auto;
+  object-fit:cover;background:#0f2a25;border:1px solid rgba(255,255,255,0.12);
+  display:grid;place-items:center;font-weight:700;color:#cfe9e2;font-size:15px;
+}
+.wa-meta{flex:1 1 auto;min-width:0}
+.wa-name{font-weight:600;font-size:16px;color:#fff;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wa-status{font-size:12.5px;color:#cdebe3;line-height:1.2;display:flex;align-items:center;gap:5px}
+.wa-status .dot{width:6px;height:6px;border-radius:50%;background:#7ee0a1;box-shadow:0 0 6px #7ee0a1}
+.wa-actions{display:flex;gap:18px;color:#fff;opacity:.92;font-size:18px;flex:0 0 auto}
+
+/* ---------- MESSAGES ---------- */
+.wa-scroll{
+  position:relative;z-index:1;
+  flex:1 1 auto;
+  overflow-y:auto;
+  padding:14px 10px 18px;
+  display:flex;flex-direction:column;gap:8px;
+  scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+}
+.wa-scroll::-webkit-scrollbar{width:0}
+
+.wa-day{
+  align-self:center;
+  background:#182229;
+  color:#cdd5da;
+  font-size:12px;
+  padding:5px 12px;border-radius:8px;
+  box-shadow:0 1px 1px rgba(0,0,0,0.25);
+  margin:2px 0 6px;
+}
+.wa-enc{
+  align-self:center;text-align:center;max-width:84%;
+  background:rgba(28,40,49,0.65);
+  color:#e2c98a;
+  font-size:11.5px;line-height:1.5;
+  padding:7px 12px;border-radius:8px;margin-bottom:6px;
+}
+
+.bubble{
+  position:relative;
+  max-width:82%;
+  padding:6px 9px 8px 10px;
+  border-radius:9px;
+  font-size:14.6px;line-height:1.42;
+  word-wrap:break-word;white-space:pre-wrap;
+  box-shadow:0 1px 1px rgba(0,0,0,0.28);
+  opacity:0;transform:translateY(8px) scale(.98);
+  transition:opacity .28s cubic-bezier(.22,1,.36,1), transform .28s cubic-bezier(.22,1,.36,1);
+  animation:none;
+}
+.bubble.show{opacity:1;transform:translateY(0) scale(1)}
+.bubble .txt{color:var(--wa-text)}
+.bubble .meta{
+  float:right;margin:6px 0 -2px 8px;
+  font-size:10.5px;color:var(--wa-time);
+  display:inline-flex;align-items:center;gap:3px;line-height:1;
+  white-space:nowrap;
+}
+.bubble.out{align-self:flex-end;background:var(--wa-bubble-out);border-top-right-radius:3px}
+.bubble.in{align-self:flex-start;background:var(--wa-bubble-in);border-top-left-radius:3px}
+.bubble.out .meta{color:#afe6d9}
+
+/* little WhatsApp tail */
+.bubble.out::after,.bubble.in::after{
+  content:"";position:absolute;top:0;width:9px;height:13px;
+}
+.bubble.out::after{right:-7px;background:var(--wa-bubble-out);
+  clip-path:polygon(0 0,100% 0,0 100%)}
+.bubble.in::after{left:-7px;background:var(--wa-bubble-in);
+  clip-path:polygon(0 0,100% 0,100% 100%)}
+
+/* double blue tick */
+.ticks{display:inline-block;position:relative;width:16px;height:11px}
+.ticks svg{display:block}
+
+/* typing indicator */
+.typing{
+  align-self:flex-start;
+  background:var(--wa-bubble-in);
+  border-radius:9px;border-top-left-radius:3px;
+  padding:11px 13px;
+  display:inline-flex;gap:4px;align-items:center;
+  box-shadow:0 1px 1px rgba(0,0,0,0.28);
+  opacity:0;transform:translateY(8px);
+  transition:opacity .2s ease, transform .2s ease;
+}
+.typing.show{opacity:1;transform:translateY(0)}
+.typing span{
+  width:7px;height:7px;border-radius:50%;background:#8696a0;
+  animation:blink 1.3s infinite ease-in-out;
+}
+.typing span:nth-child(2){animation-delay:.18s}
+.typing span:nth-child(3){animation-delay:.36s}
+@keyframes blink{0%,80%,100%{opacity:.35;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+
+/* ---------- INPUT BAR (decor, dezactivat) ---------- */
+.wa-input{
+  position:relative;z-index:2;flex:0 0 auto;
+  display:flex;align-items:center;gap:9px;
+  padding:9px 10px calc(env(safe-area-inset-bottom) + 9px);
+  background:#0b141a;
+}
+.wa-input .field{
+  flex:1 1 auto;background:#202c33;border-radius:22px;
+  padding:11px 15px;color:var(--wa-text-dim);font-size:14px;
+  display:flex;align-items:center;gap:8px;
+}
+.wa-input .send{
+  flex:0 0 auto;width:44px;height:44px;border-radius:50%;
+  background:var(--wa-green);display:grid;place-items:center;color:#062b1f;font-size:19px;
+  box-shadow:0 4px 14px -4px rgba(37,211,102,0.6);
+}
+
+/* ---------- START OVERLAY ---------- */
+.overlay{
+  position:absolute;inset:0;z-index:20;
+  background:linear-gradient(160deg, #0a1322 0%, #07120e 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:34px;gap:18px;
+  opacity:1;transition:opacity .55s ease;
+}
+.overlay.hide{opacity:0;pointer-events:none}
+.overlay .scene{
+  font-size:18.5px;line-height:1.65;color:#f4f1e7;font-weight:500;max-width:300px;
+}
+.overlay .scene b{color:var(--dal-gold);font-weight:700}
+.overlay .clock{
+  font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#7d8e9a;
+  display:flex;align-items:center;gap:8px;
+}
+.overlay .clock .pulse{width:8px;height:8px;border-radius:50%;background:var(--wa-green);box-shadow:0 0 10px var(--wa-green);animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:.4;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+
+/* ---------- END CARD ---------- */
+.endcard{
+  position:absolute;left:0;right:0;bottom:0;z-index:15;
+  margin:0 10px calc(env(safe-area-inset-bottom) + 70px);
+  padding:20px 18px;
+  background:rgba(12,20,32,0.86);
+  border:1px solid var(--dal-gold-soft);
+  border-radius:20px;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 20px 50px -20px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.03) inset;
+  opacity:0;transform:translateY(26px) scale(.98);
+  transition:opacity .5s cubic-bezier(.22,1,.36,1), transform .5s cubic-bezier(.22,1,.36,1);
+  pointer-events:none;
+}
+.endcard.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.endcard .eyebrow{
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dal-gold);
+  margin-bottom:9px;font-weight:600;
+}
+.endcard p{font-size:14.5px;line-height:1.62;color:#e6ebef;margin-bottom:14px}
+.endcard p b{color:#fff;font-weight:600}
+.endcard .cta{
+  display:inline-flex;align-items:center;gap:8px;
+  background:linear-gradient(180deg,#2bdd72,#13b257);
+  color:#03241a;font-weight:700;font-size:14.5px;
+  padding:11px 18px;border-radius:13px;border:0;cursor:pointer;
+  box-shadow:0 8px 22px -8px rgba(37,211,102,0.7);
+  transition:transform .18s cubic-bezier(.4,0,.2,1), box-shadow .18s ease;
+}
+.endcard .cta:hover{transform:translateY(-2px);box-shadow:0 12px 28px -8px rgba(37,211,102,0.85)}
+.endcard .cta:active{transform:translateY(0) scale(.98)}
+.endcard .cta:focus-visible{outline:2px solid var(--dal-gold);outline-offset:3px}
+
+/* ---------- EXAMPLE BADGE ---------- */
+.example-badge{
+  position:absolute;top:calc(env(safe-area-inset-top) + 8px);right:10px;z-index:6;
+  font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;
+  color:#fff;background:rgba(0,0,0,0.32);
+  padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.18);
+  backdrop-filter:blur(4px);pointer-events:none;
+}
+
+/* ---------- REPLAY / SCENARIO PICKER (sub telefon) ---------- */
+.controls{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  display:flex;flex-direction:column;align-items:center;gap:9px;
+  padding:12px 14px calc(env(safe-area-inset-bottom) + 12px);
+  pointer-events:none;
+}
+.controls .row{display:flex;gap:7px;pointer-events:auto;flex-wrap:wrap;justify-content:center}
+.chip{
+  font-size:12px;font-weight:600;color:#cdd5da;
+  background:rgba(12,20,32,0.7);border:1px solid rgba(255,255,255,0.12);
+  padding:7px 13px;border-radius:999px;cursor:pointer;
+  backdrop-filter:blur(8px);
+  transition:transform .16s cubic-bezier(.4,0,.2,1), background .16s ease, color .16s ease, border-color .16s ease;
+}
+.chip:hover{transform:translateY(-1px);border-color:var(--dal-gold-soft)}
+.chip:active{transform:scale(.96)}
+.chip:focus-visible{outline:2px solid var(--dal-gold);outline-offset:2px}
+.chip.active{background:var(--dal-gold);color:#241c05;border-color:var(--dal-gold)}
+.replay{
+  font-size:12.5px;font-weight:700;color:#03241a;
+  background:linear-gradient(180deg,#2bdd72,#13b257);
+  padding:9px 18px;border-radius:999px;cursor:pointer;border:0;
+  box-shadow:0 8px 22px -8px rgba(37,211,102,0.7);
+  display:inline-flex;align-items:center;gap:7px;
+  transition:transform .16s cubic-bezier(.4,0,.2,1), box-shadow .16s ease;
+}
+.replay:hover{transform:translateY(-2px)}
+.replay:active{transform:scale(.97)}
+.replay:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+@media (max-width:400px){
+  body{padding:0}
+  .phone{max-width:100%;height:100dvh;border-radius:0;box-shadow:none}
+  .phone::after{display:none}
+  .controls{background:linear-gradient(0deg, rgba(7,18,14,0.92), transparent)}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001s!important;transition-duration:.05s!important}
+}
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="example-badge">exemplu</div>
+
+  <!-- HEADER -->
+  <header class="wa-header">
+    <div class="wa-back">‹</div>
+    <div class="wa-avatar" id="avatar">AC</div>
+    <div class="wa-meta">
+      <div class="wa-name" id="contactName">Asistent ClimaCool</div>
+      <div class="wa-status"><span class="dot"></span><span>online</span></div>
+    </div>
+    <div class="wa-actions"><span>📹</span><span>📞</span><span>⋮</span></div>
+  </header>
+
+  <!-- MESSAGES -->
+  <div class="wa-scroll" id="scroll">
+    <div class="wa-day">astăzi</div>
+    <div class="wa-enc">🔒 Mesajele sunt criptate integral. Răspuns automat, instant.</div>
+  </div>
+
+  <!-- INPUT (decor) -->
+  <div class="wa-input">
+    <div class="field"><span>😊</span><span>Mesaj</span></div>
+    <div class="send">➤</div>
+  </div>
+
+  <!-- START OVERLAY -->
+  <div class="overlay" id="overlay">
+    <div class="clock"><span class="pulse"></span><span id="overlayClock">Vineri 22:14</span></div>
+    <div class="scene" id="overlayScene"></div>
+  </div>
+
+  <!-- END CARD -->
+  <div class="endcard" id="endcard">
+    <div class="eyebrow">DAL Media · Agent WhatsApp</div>
+    <p id="endText"></p>
+    <button class="cta" id="endReplay">↻ Redă din nou</button>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="row" id="scenarioRow"></div>
+  <div class="row">
+    <button class="replay" id="replayBtn">↻ Redă din nou</button>
+  </div>
+</div>
+
+<script>
+/* =================================================================
+   CONFIG — 3 scenarii reskinabile. Schimbă/duplichează aici.
+   Fiecare mesaj: { sender:'client'|'agent', text, oraAfisata,
+                    intarziereMs (pauză înainte), typingMs (cât „scrie") }
+   ================================================================= */
+const SCENARII = {
+  ac:{
+    eticheta:"Aer condiționat",
+    numeFirma:"ClimaCool",
+    numeAgent:"Asistent ClimaCool",
+    initialeAvatar:"AC",
+    pozaContact:"", // pune un URL ca să folosești poză reală
+    culoareAccent:"#25D366",
+    overlay:{
+      ceas:"Vineri 22:14",
+      text:'Vineri seara, 22:14. <b>Andrei</b> e încă pe un montaj. Un client nou îi scrie pe WhatsApp.'
+    },
+    final:'Cererea a ajuns la <b>Andrei</b> în câteva secunde. El era pe teren, clientul nu a sunat la altă firmă. Cu un agent DAL Media, răspunzi instant, zi și noapte.',
+    mesaje:[
+      {sender:'client',text:'Bună seara, aveți disponibilitate pentru un montaj de aer condiționat săptămâna asta?',oraAfisata:'22:14',intarziereMs:600,typingMs:0},
+      {sender:'agent',text:'Bună seara! Da, avem. Vă ajut să programăm. Ce unitate aveți, sau vreți și o recomandare la achiziție?',oraAfisata:'22:14',intarziereMs:500,typingMs:1700},
+      {sender:'client',text:'Aș vrea un 12000 BTU pentru living, vreo 22 mp.',oraAfisata:'22:15',intarziereMs:1700,typingMs:0},
+      {sender:'agent',text:'Perfect, 12000 BTU e exact cât trebuie. În ce sector sunteți, ca să vă dau o echipă din zonă?',oraAfisata:'22:15',intarziereMs:500,typingMs:1600},
+      {sender:'client',text:'Sector 4, lângă Tineretului.',oraAfisata:'22:15',intarziereMs:1500,typingMs:0},
+      {sender:'agent',text:'Am notat. E urgent sau vă convine în cursul săptămânii viitoare?',oraAfisata:'22:16',intarziereMs:500,typingMs:1300},
+      {sender:'client',text:'Cât mai repede, se anunță caniculă.',oraAfisata:'22:16',intarziereMs:1500,typingMs:0},
+      {sender:'agent',text:'Vă înțeleg. Am trimis cererea către Andrei cu tot: 12000 BTU, sector 4, urgent. Vă sună mâine dimineață cu o oră fixă. E ok la numărul de pe care scrieți?',oraAfisata:'22:16',intarziereMs:500,typingMs:2200},
+      {sender:'client',text:'Da, perfect. Mulțumesc!',oraAfisata:'22:17',intarziereMs:1600,typingMs:0},
+      {sender:'agent',text:'Cu plăcere, pe mâine! 🙂',oraAfisata:'22:17',intarziereMs:500,typingMs:1100},
+    ]
+  },
+
+  instalator:{
+    eticheta:"Instalator (avarie)",
+    numeFirma:"AquaFix",
+    numeAgent:"Asistent AquaFix",
+    initialeAvatar:"AF",
+    pozaContact:"",
+    culoareAccent:"#25D366",
+    overlay:{
+      ceas:"Marți 23:47",
+      text:'Marți, 23:47. <b>Mihai</b> doarme după o zi grea. Un client cu țeava spartă îi scrie disperat pe WhatsApp.'
+    },
+    final:'Avaria a ajuns la <b>Mihai</b> imediat, cu adresă și detalii. Clientul s-a calmat și nu a sunat la altă firmă de urgențe. Cu un agent DAL Media, prinzi avariile de noapte chiar și când dormi.',
+    mesaje:[
+      {sender:'client',text:'Bună, am o țeavă spartă în baie, curge tare. Puteți veni în seara asta?',oraAfisata:'23:47',intarziereMs:600,typingMs:0},
+      {sender:'agent',text:'Bună seara! Înțeleg, e o urgență. Mai întâi: ați închis robinetul general de apă? E de obicei lângă apometru sau sub chiuveta din baie.',oraAfisata:'23:47',intarziereMs:500,typingMs:2000},
+      {sender:'client',text:'L-am închis acum, nu mai curge așa tare.',oraAfisata:'23:48',intarziereMs:1700,typingMs:0},
+      {sender:'agent',text:'Foarte bine, ați oprit la timp. În ce zonă sunteți, ca să trimit echipa cea mai apropiată?',oraAfisata:'23:48',intarziereMs:500,typingMs:1500},
+      {sender:'client',text:'Drumul Taberei, lângă piață.',oraAfisata:'23:49',intarziereMs:1500,typingMs:0},
+      {sender:'agent',text:'Am notat. E apartament sau casă, și la ce etaj? Întreb ca echipa să vină pregătită.',oraAfisata:'23:49',intarziereMs:500,typingMs:1500},
+      {sender:'client',text:'Apartament, etaj 3.',oraAfisata:'23:49',intarziereMs:1400,typingMs:0},
+      {sender:'agent',text:'Perfect. Am trimis avaria către Mihai ca urgență: țeavă spartă, Drumul Taberei, apartament etaj 3, apa oprită. Vă sună în câteva minute ca să confirme ora exactă. E bine la numărul ăsta?',oraAfisata:'23:50',intarziereMs:500,typingMs:2300},
+      {sender:'client',text:'Da, vă rog. Mulțumesc mult, eram panicat.',oraAfisata:'23:50',intarziereMs:1600,typingMs:0},
+      {sender:'agent',text:'E normal, dar e sub control acum. Vă sună imediat. 🙂',oraAfisata:'23:50',intarziereMs:500,typingMs:1200},
+    ]
+  },
+
+  electrician:{
+    eticheta:"Electrician (pană)",
+    numeFirma:"VoltPro",
+    numeAgent:"Asistent VoltPro",
+    initialeAvatar:"VP",
+    pozaContact:"",
+    culoareAccent:"#25D366",
+    overlay:{
+      ceas:"Joi 21:30",
+      text:'Joi, 21:30. <b>Radu</b> e la o intervenție în alt capăt al orașului. Un client rămas pe întuneric îi scrie pe WhatsApp.'
+    },
+    final:'Clientul a primit răspuns pe loc și o programare clară. <b>Radu</b> a prins lucrarea fără să fie nevoit să răspundă el la telefon în timpul intervenției. Cu un agent DAL Media, nu mai pierzi clienții care sună seara.',
+    mesaje:[
+      {sender:'client',text:'Bună seara, mi-a picat curentul în tot apartamentul. Puteți ajuta?',oraAfisata:'21:30',intarziereMs:600,typingMs:0},
+      {sender:'agent',text:'Bună seara! Vă ajut imediat. Întâi să vedem cât e de grav: la vecini este curent sau e pană pe toată scara?',oraAfisata:'21:30',intarziereMs:500,typingMs:1900},
+      {sender:'client',text:'La vecini e curent, doar la mine nu.',oraAfisata:'21:31',intarziereMs:1700,typingMs:0},
+      {sender:'agent',text:'Atunci e de la tabloul dumneavoastră, se rezolvă. V-aș ruga să nu umblați singur la siguranțe. Ați observat un miros de ars sau ceva fierbinte la tablou?',oraAfisata:'21:31',intarziereMs:500,typingMs:2100},
+      {sender:'client',text:'Nu, niciun miros. Doar s-a stins tot dintr-o dată.',oraAfisata:'21:32',intarziereMs:1600,typingMs:0},
+      {sender:'agent',text:'Bine, sună a siguranță sărită, nu e periculos. În ce zonă sunteți, ca să trimit electricianul cel mai apropiat?',oraAfisata:'21:32',intarziereMs:500,typingMs:1600},
+      {sender:'client',text:'Pantelimon, lângă parc.',oraAfisata:'21:32',intarziereMs:1400,typingMs:0},
+      {sender:'agent',text:'Am notat. Am trimis cererea către Radu: pană totală în apartament, Pantelimon, fără miros de ars, vecinii au curent. Vă sună în câteva minute și stabiliți ora. E ok la numărul de pe care scrieți?',oraAfisata:'21:33',intarziereMs:500,typingMs:2300},
+      {sender:'client',text:'Da, perfect. Mulțumesc că ați răspuns așa repede!',oraAfisata:'21:33',intarziereMs:1600,typingMs:0},
+      {sender:'agent',text:'Cu drag. Stați liniștit, vă sună imediat. 🙂',oraAfisata:'21:33',intarziereMs:500,typingMs:1200},
+    ]
+  }
+};
+
+/* =================================================================
+   MOTOR — nu trebuie modificat ca să reskinuiești.
+   ================================================================= */
+const $ = s => document.querySelector(s);
+const scroll = $('#scroll');
+const overlay = $('#overlay');
+const endcard = $('#endcard');
+let activeKey = 'ac';
+let timers = [];
+let running = false;
+
+const TICKS_SVG = `<span class="ticks"><svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+<path d="M11.07.65 5.6 7.5 3.4 5.1 2.4 6.1l3.3 3.6L12.1 1.6z" fill="#53bdeb"/>
+<path d="M15.07.65 9.6 7.5 8.7 6.5 7.7 7.5l1.9 2.2L16.1 1.6z" fill="#53bdeb"/>
+</svg></span>`;
+
+function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+function wait(ms){ return new Promise(r=>timers.push(setTimeout(r,ms))); }
+function scrollDown(){ scroll.scrollTop = scroll.scrollHeight + 999; }
+
+function buildBubble(m){
+  const b = document.createElement('div');
+  b.className = 'bubble ' + (m.sender === 'agent' ? 'out' : 'in');
+  const txt = document.createElement('span');
+  txt.className = 'txt';
+  txt.textContent = m.text;
+  const meta = document.createElement('span');
+  meta.className = 'meta';
+  meta.innerHTML = m.oraAfisata + (m.sender === 'agent' ? ' ' + TICKS_SVG : '');
+  b.appendChild(txt);
+  b.appendChild(meta);
+  return b;
+}
+
+function showTyping(){
+  const t = document.createElement('div');
+  t.className = 'typing';
+  t.innerHTML = '<span></span><span></span><span></span>';
+  scroll.appendChild(t);
+  scrollDown();
+  requestAnimationFrame(()=>t.classList.add('show'));
+  return t;
+}
+
+function resetChat(){
+  clearTimers();
+  // șterge tot ce e după elementele fixe (day + encryption)
+  [...scroll.querySelectorAll('.bubble,.typing')].forEach(el=>el.remove());
+  endcard.classList.remove('show');
+  overlay.classList.remove('hide');
+}
+
+function applyConfig(cfg){
+  $('#contactName').textContent = cfg.numeAgent;
+  $('#overlayScene').innerHTML = cfg.overlay.text;
+  $('#overlayClock').textContent = cfg.overlay.ceas;
+  $('#endText').innerHTML = cfg.final;
+  const av = $('#avatar');
+  if(cfg.pozaContact){
+    av.style.backgroundImage = `url('${cfg.pozaContact}')`;
+    av.style.backgroundSize = 'cover';
+    av.textContent = '';
+  } else {
+    av.style.backgroundImage = '';
+    av.textContent = cfg.initialeAvatar;
+  }
+}
+
+async function play(key){
+  const cfg = SCENARII[key];
+  activeKey = key;
+  running = true;
+  resetChat();
+  applyConfig(cfg);
+  highlightChip(key);
+
+  // overlay vizibil ~1.5s
+  await wait(1500);
+  overlay.classList.add('hide');
+  await wait(550);
+
+  for(const m of cfg.mesaje){
+    if(!running) return;
+    await wait(m.intarziereMs || 400);
+    if(m.sender === 'agent' && m.typingMs){
+      const t = showTyping();
+      await wait(m.typingMs);
+      t.remove();
+    }
+    if(!running) return;
+    const b = buildBubble(m);
+    scroll.appendChild(b);
+    scrollDown();
+    requestAnimationFrame(()=>{ b.classList.add('show'); scrollDown(); });
+    await wait(260);
+    scrollDown();
+  }
+
+  await wait(700);
+  if(!running) return;
+  endcard.classList.add('show');
+  scrollDown();
+  running = false;
+}
+
+/* ---- scenario picker ---- */
+function highlightChip(key){
+  document.querySelectorAll('.chip').forEach(c=>{
+    c.classList.toggle('active', c.dataset.key === key);
+  });
+}
+const row = $('#scenarioRow');
+Object.entries(SCENARII).forEach(([key,cfg])=>{
+  const c = document.createElement('button');
+  c.className = 'chip';
+  c.dataset.key = key;
+  c.textContent = cfg.eticheta;
+  c.addEventListener('click', ()=>{ running = false; clearTimers(); play(key); });
+  row.appendChild(c);
+});
+
+$('#replayBtn').addEventListener('click', ()=>{ running = false; clearTimers(); play(activeKey); });
+$('#endReplay').addEventListener('click', ()=>{ running = false; clearTimers(); play(activeKey); });
+
+/* start */
+play('ac');
+</script>
+</body>
+</html>
