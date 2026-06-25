@@ -262,15 +262,6 @@ body{
 .endcard .cta:active{transform:translateY(0) scale(.98)}
 .endcard .cta:focus-visible{outline:2px solid var(--dal-gold);outline-offset:3px}
 
-/* ---------- EXAMPLE BADGE ---------- */
-.example-badge{
-  position:absolute;top:calc(env(safe-area-inset-top) + 8px);right:10px;z-index:6;
-  font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;
-  color:#fff;background:rgba(0,0,0,0.32);
-  padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.18);
-  backdrop-filter:blur(4px);pointer-events:none;
-}
-
 /* ---------- CONTROLS PANEL (sub telefon) ---------- */
 .controls{
   width:100%;max-width:390px;flex:0 0 auto;
@@ -329,7 +320,6 @@ body{
 <body>
 
 <div class="phone" id="phone">
-  <div class="example-badge">exemplu</div>
 
   <!-- HEADER -->
   <header class="wa-header">
@@ -364,7 +354,6 @@ body{
   <div class="endcard" id="endcard">
     <div class="eyebrow">DAL Media · Agent WhatsApp</div>
     <p id="endText"></p>
-    <button class="cta" id="endReplay">↻ Redă din nou</button>
   </div>
 </div>
 
@@ -373,14 +362,7 @@ body{
   <div class="ctl-label">Scenariu</div>
   <div class="row" id="scenarioRow"></div>
 
-  <div class="ctl-label">Viteză</div>
-  <div class="row" id="speedRow">
-    <button class="chip" data-speed="lent">🐢 Lent</button>
-    <button class="chip" data-speed="normal">Normal</button>
-    <button class="chip" data-speed="rapid">⚡ Rapid</button>
-  </div>
-
-  <div class="row" style="margin-top:4px">
+  <div class="row" style="margin-top:6px">
     <button class="replay ghost" id="pauseBtn" style="flex:1 1 auto;justify-content:center">⏸ Pauză</button>
   </div>
 </div>
@@ -472,12 +454,12 @@ const SCENARII = {
 };
 
 /* =================================================================
-   SETĂRI — viteza de redare. 'lent' = mai relaxat (default).
-   Multiplicatorii înmulțesc TOATE pauzele/typing din scenarii.
+   SETĂRI — viteza e fixă (lentă), nereglabilă din UI.
+   Mărește numărul ca să fie și mai lent.
    ================================================================= */
 const SETARI = {
-  vitezaInitiala:'lent',                          // 'lent' | 'normal' | 'rapid'
-  multiplicatori:{ lent:1.6, normal:1.0, rapid:0.6 },
+  vitezaLenta: 1.6,        // multiplicator global aplicat tuturor pauzelor/typing
+  introMs: 4400,           // cât stă overlay-ul de început, în ms reali (~2s mai mult)
 };
 
 /* =================================================================
@@ -491,9 +473,9 @@ const endcard = $('#endcard');
 let activeKey = 'ac';
 let gen = 0;                 // anulează rularea curentă la replay / schimbare scenariu
 let waiters = [];            // timere active (pausabile + anulabile)
-const playback = { speedKey: SETARI.vitezaInitiala, paused:false };
+const playback = { paused:false };
 
-function factor(){ return SETARI.multiplicatori[playback.speedKey] || 1; }
+function factor(){ return SETARI.vitezaLenta || 1; }
 
 /* wait pausabil + anulabil */
 function wait(ms){
@@ -577,8 +559,8 @@ async function play(key){
   setPaused(false);
 
   try{
-    // overlay vizibil ~1.5s
-    await wait(1500);
+    // overlay de început (durată reală introMs; /factor anulează multiplicatorul)
+    await wait(SETARI.introMs / factor());
     overlay.classList.add('hide');
     await wait(550);
 
@@ -614,16 +596,6 @@ function setPaused(p){
 }
 function togglePause(){ setPaused(!playback.paused); }
 
-/* ---- viteză ---- */
-const speedRow = $('#speedRow');
-function highlightSpeed(){
-  speedRow.querySelectorAll('[data-speed]').forEach(b=>
-    b.classList.toggle('active', b.dataset.speed === playback.speedKey));
-}
-speedRow.querySelectorAll('[data-speed]').forEach(b=>{
-  b.addEventListener('click', ()=>{ playback.speedKey = b.dataset.speed; highlightSpeed(); });
-});
-
 /* ---- scenario picker ---- */
 function highlightChip(key){
   document.querySelectorAll('#scenarioRow .chip').forEach(c=>
@@ -640,10 +612,8 @@ Object.entries(SCENARII).forEach(([key,cfg])=>{
 });
 
 $('#pauseBtn').addEventListener('click', togglePause);
-$('#endReplay').addEventListener('click', ()=> play(activeKey));
 
 /* start */
-highlightSpeed();
 play('ac');
 </script>
 </body>
