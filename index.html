@@ -380,9 +380,8 @@ body{
     <button class="chip" data-speed="rapid">⚡ Rapid</button>
   </div>
 
-  <div class="row split" style="margin-top:4px">
-    <button class="replay ghost" id="pauseBtn">⏸ Pauză</button>
-    <button class="replay" id="replayBtn">↻ Redă din nou</button>
+  <div class="row" style="margin-top:4px">
+    <button class="replay ghost" id="pauseBtn" style="flex:1 1 auto;justify-content:center">⏸ Pauză</button>
   </div>
 </div>
 
@@ -641,7 +640,6 @@ Object.entries(SCENARII).forEach(([key,cfg])=>{
 });
 
 $('#pauseBtn').addEventListener('click', togglePause);
-$('#replayBtn').addEventListener('click', ()=> play(activeKey));
 $('#endReplay').addEventListener('click', ()=> play(activeKey));
 
 /* start */
